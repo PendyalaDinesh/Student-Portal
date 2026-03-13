@@ -1,10 +1,12 @@
-// Week 2 + Week 4 — Top navigation bar
+// Navbar — category tabs each navigate to dedicated feature page
 import { useState, useRef, useEffect } from 'react';
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import Avatar from '../common/Avatar';
 import { CATEGORIES } from '../../utils/constants';
 import toast from 'react-hot-toast';
+
+const ROUTES = { housing: '/housing', rides: '/rides', jobs: '/jobs', community: '/community' };
 
 export default function Navbar() {
   const { isLoggedIn, dbUser, logout } = useAuth();
@@ -14,49 +16,37 @@ export default function Navbar() {
   const [mobOpen,  setMobOpen]  = useState(false);
   const dropRef = useRef(null);
 
-  // Close dropdown on outside click
   useEffect(() => {
-    const handler = (e) => {
-      if (dropRef.current && !dropRef.current.contains(e.target)) setDropOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    const h = (e) => { if (dropRef.current && !dropRef.current.contains(e.target)) setDropOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
   }, []);
-
-  // Close mobile menu on navigation
   useEffect(() => setMobOpen(false), [location.pathname]);
 
   const handleLogout = async () => {
-    await logout();
-    toast.success('Logged out successfully');
-    navigate('/');
-    setDropOpen(false);
+    await logout(); toast.success('Logged out'); navigate('/'); setDropOpen(false);
   };
 
-  const activeCat = new URLSearchParams(location.search).get('category');
+  const activeCat = CATEGORIES.find(c => location.pathname.startsWith(ROUTES[c.id]))?.id;
 
   return (
-    <nav className="sticky top-0 z-40 bg-gray-950/90 backdrop-blur-xl border-b border-gray-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center h-16 gap-4">
+    <nav className="sticky top-0 z-40 bg-gray-950/95 backdrop-blur-xl border-b border-gray-800">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center h-16 gap-3">
 
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2.5 shrink-0">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center text-lg shadow-lg">🎓</div>
-          <span className="font-display font-bold text-xl hidden sm:block">
-            Student<span className="text-sky-400">Hub</span>
-          </span>
+        <Link to="/" className="flex items-center gap-2 shrink-0 mr-2">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center text-base shadow-lg">🎓</div>
+          <span className="font-bold text-lg hidden sm:block">Student<span className="text-sky-400">Hub</span></span>
         </Link>
 
-        {/* Category tabs — desktop */}
-        <div className="hidden md:flex items-center gap-1 flex-1">
+        {/* Category tabs — desktop, each goes to dedicated page */}
+        <div className="hidden md:flex items-center gap-0.5 flex-1">
           {CATEGORIES.map(cat => (
-            <NavLink key={cat.id} to={`/?category=${cat.id}`}
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium transition-all
+            <NavLink key={cat.id} to={ROUTES[cat.id]}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all
                 ${activeCat === cat.id
                   ? `${cat.bg} ${cat.text} border ${cat.border}`
-                  : 'text-gray-400 hover:text-white hover:bg-gray-800'
-                }`}
-            >
+                  : 'text-gray-400 hover:text-white hover:bg-gray-800'}`}>
               <span>{cat.icon}</span> {cat.label}
             </NavLink>
           ))}
@@ -67,51 +57,42 @@ export default function Navbar() {
           {isLoggedIn ? (
             <>
               <Link to="/posts/new"
-                className="hidden sm:flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-500
+                className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 bg-sky-600 hover:bg-sky-500
                   text-white text-sm font-semibold rounded-xl transition-all shadow-lg shadow-sky-900/30">
-                <span className="text-base leading-none">+</span> New Post
+                <span>+</span> Post
               </Link>
 
-              {/* User menu */}
               <div className="relative" ref={dropRef}>
                 <button onClick={() => setDropOpen(!dropOpen)}
-                  className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl hover:bg-gray-800 transition-all">
-                  <Avatar user={dbUser} size={32} />
-                  <span className="hidden sm:block text-sm font-medium text-gray-200 max-w-24 truncate">
+                  className="flex items-center gap-2 pl-2 pr-2.5 py-1.5 rounded-xl hover:bg-gray-800 transition-all">
+                  <Avatar user={dbUser} size={30} />
+                  <span className="hidden sm:block text-sm font-medium text-gray-200 max-w-[80px] truncate">
                     {dbUser?.name?.split(' ')[0]}
                   </span>
-                  <svg className="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M7 10l5 5 5-5H7z"/>
-                  </svg>
+                  <svg className="w-3.5 h-3.5 text-gray-500" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5H7z"/></svg>
                 </button>
 
                 {dropOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-56 bg-gray-900 border border-gray-700
-                    rounded-2xl shadow-2xl overflow-hidden animate-fadeIn">
+                  <div className="absolute right-0 top-full mt-2 w-52 bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden animate-fadeIn">
                     <div className="px-4 py-3 border-b border-gray-800">
-                      <p className="font-semibold text-sm">{dbUser?.name}</p>
+                      <p className="font-semibold text-sm truncate">{dbUser?.name}</p>
                       <p className="text-xs text-gray-400 truncate">{dbUser?.email}</p>
                     </div>
                     {[
-                      { to: '/profile', icon: '👤', label: 'My Profile' },
-                      { to: '/my-posts', icon: '📋', label: 'My Listings' },
-                      { to: '/saved', icon: '❤️', label: 'Saved Posts' },
-                      { to: '/messages', icon: '💬', label: 'Messages' },
-                    ].map(item => (
-                      <Link key={item.to} to={item.to}
-                        onClick={() => setDropOpen(false)}
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300
-                          hover:bg-gray-800 hover:text-white transition-colors">
-                        <span>{item.icon}</span> {item.label}
+                      ['/profile',  '👤', 'My Profile'],
+                      ['/my-posts', '📋', 'My Listings'],
+                      ['/saved',    '❤️', 'Saved Posts'],
+                      ['/messages', '💬', 'Messages'],
+                      ['/posts/new','✏️', 'New Post'],
+                    ].map(([to, icon, label]) => (
+                      <Link key={to} to={to} onClick={() => setDropOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors">
+                        <span>{icon}</span> {label}
                       </Link>
                     ))}
-                    <Link to="/posts/new" className="sm:hidden flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:bg-gray-800" onClick={() => setDropOpen(false)}>
-                      <span>✏️</span> New Post
-                    </Link>
                     <div className="border-t border-gray-800">
                       <button onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400
-                          hover:bg-red-900/20 transition-colors">
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:bg-red-900/20 transition-colors">
                         <span>🚪</span> Log Out
                       </button>
                     </div>
@@ -121,14 +102,8 @@ export default function Navbar() {
             </>
           ) : (
             <>
-              <Link to="/login"
-                className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white rounded-xl hover:bg-gray-800 transition-all">
-                Log In
-              </Link>
-              <Link to="/register"
-                className="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white text-sm font-semibold rounded-xl transition-all shadow-lg shadow-sky-900/30">
-                Sign Up
-              </Link>
+              <Link to="/login" className="px-3.5 py-2 text-sm font-medium text-gray-300 hover:text-white rounded-xl hover:bg-gray-800 transition-all">Log In</Link>
+              <Link to="/register" className="px-3.5 py-2 bg-sky-600 hover:bg-sky-500 text-white text-sm font-semibold rounded-xl transition-all">Sign Up</Link>
             </>
           )}
 
@@ -144,13 +119,12 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile category menu */}
+      {/* Mobile menu */}
       {mobOpen && (
-        <div className="md:hidden border-t border-gray-800 bg-gray-900 px-4 py-3 grid grid-cols-2 gap-2">
+        <div className="md:hidden border-t border-gray-800 bg-gray-900/95 px-4 py-3 grid grid-cols-2 gap-2">
           {CATEGORIES.map(cat => (
-            <Link key={cat.id} to={`/?category=${cat.id}`}
-              className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium
-                border transition-all ${cat.bg} ${cat.text} ${cat.border}`}>
+            <Link key={cat.id} to={ROUTES[cat.id]}
+              className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium border transition-all ${cat.bg} ${cat.text} ${cat.border}`}>
               <span>{cat.icon}</span> {cat.label}
             </Link>
           ))}
